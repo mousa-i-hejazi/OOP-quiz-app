@@ -208,3 +208,67 @@ class Quiz {
     submitBtn.onclick = () => this.submit();
   }
 }
+const QUESTIONS = [
+  new MultipleChoiceQuestion({
+    id: 1,
+    text: "Which HTML element is used to include JavaScript code?",
+    options: ["<script>", "<js>", "<javascript>", "<code>"],
+    correctIndex: 0,
+  }),
+  new MultipleChoiceQuestion({
+    id: 2,
+    text: "Which method adds an item to the end of a JavaScript array?",
+    options: ["push()", "append()", "add()", "insert()"],
+    correctIndex: 0,
+  }),
+  new MultipleChoiceQuestion({
+    id: 3,
+    text: "Which method adds an item to the start of a JavaScript array?",
+    options: ["push()", "append()", "add()", "unshift()"],
+    correctIndex: 3,
+  }),
+  new TrueFalseQuestion({
+    id: 4,
+    text: "const variables in JavaScript cannot be reassigned.",
+    correctIndex: 0,
+  }),
+  new MultipleChoiceQuestion({
+    id: 5,
+    text: "Which ES6 feature allows extracting properties from objects into variables?",
+    options: ["Hoisting", "Destructuring", "Currying", "Shadowing"],
+    correctIndex: 1,
+  }),
+  new MultipleChoiceQuestion({
+    id: 6,
+    text: "Which method selects an element by its ID",
+    options: [
+      "document.getElementById()",
+      "document.querySelectorAll()",
+      "document.getElementsByClassName()",
+      "document.querySelector()",
+    ],
+    correctIndex: 0,
+  }),
+  new TrueFalseQuestion({
+    id: 7,
+    text: "pop() removes the first element of an array",
+    correctIndex: 1,
+  }),
+  new MultipleChoiceQuestion({
+    id: 8,
+    text: "Which array method creates a new array with elements that pass a test?",
+    options: ["map()", "reduce()", "filter()", "forEach()"],
+    correctIndex: 2,
+  }),
+  new TrueFalseQuestion({
+    id: 9,
+    text: "localStorage persists data even after the browser is closed.",
+    correctIndex: 0,
+  }),
+  new MultipleChoiceQuestion({
+    id: 10,
+    text: "Which keyword is used to create a class in JavaScript?",
+    options: ["object", "prototype", "class", "struct"],
+    correctIndex: 2,
+  }),
+];
