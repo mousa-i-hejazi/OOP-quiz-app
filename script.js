@@ -1,3 +1,18 @@
+class StorageManager {
+  constructor(key) {
+    this.key = key;
+  }
+  load() {
+      const storedData = localStorage.getItem(this.key);
+      return storedData ? JSON.parse(storedData) : null;
+  }
+  save(data) {
+    localStorage.setItem(this.key, JSON.stringify(data));
+  }
+  clear() {
+    localStorage.removeItem(this.key);
+  }
+}
 class Question {
   constructor({ id, text, options, correctIndex }) {
     this.id = id;
