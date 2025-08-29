@@ -272,3 +272,12 @@ const QUESTIONS = [
     correctIndex: 2,
   }),
 ];
+document.addEventListener("DOMContentLoaded", () => {
+  const root = document.getElementById("quiz");
+  new Quiz({
+    questions: QUESTIONS,
+    rootEl: root,
+    pass: 0.7,
+    storageKey: "oop_quiz",
+  });
+});
