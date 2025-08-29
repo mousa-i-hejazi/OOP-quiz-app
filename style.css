@@ -1,0 +1,33 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+.container {
+  max-width: 900px;
+  margin: 50px auto;
+  padding: 15px;
+}
+header {
+  text-align: center;
+  background-color: #334155;
+  color: wheat;
+  padding: 20px 0;
+}
+
+.btn {
+  padding: 10px 20px;
+  border-radius: 12px;
+  border: 1px solid;
+  cursor: pointer;
+  font-weight: 600;
+}
+.hidden {
+  display: none;
+}
+
+footer {
+  background-color: #334155;
+  color: wheat;
+  text-align: center;
+  padding: 20px 0;
+}
