@@ -34,7 +34,7 @@ class MultipleChoiceQuestion extends Question {
   }
 }
 
-class TrueFalseQuestion extends Question {
+class TrueFalseQuestion {
   constructor({ id, text, correctIndex }) {
     this.id = id;
     this.text = text;
@@ -43,6 +43,9 @@ class TrueFalseQuestion extends Question {
   }
   getType() {
     return "truefalse";
+  }
+  isCorrect(answerIndex) {
+    return Number(answerIndex) === this.correctIndex;
   }
 }
 class Attempt {
@@ -74,10 +77,11 @@ class Attempt {
   }
 }
 class Quiz {
-  constructor({ questions, pass = 0.7, storageKey = "quiz" }) {
+  constructor({ questions, rootEl, pass = 0.7, storageKey = "quiz" }) {
     this.questions = questions;
     this.rootEl = rootEl;
     this.attempt = new Attempt({ pass });
+    this.storage = new StorageManager(storageKey);
     this.restoreOrCreateAttempt();
     this.render();
   }
@@ -123,6 +127,7 @@ class Quiz {
       .querySelectorAll('input[type="radio"]')
       .forEach((el) => (el.disabled = true));
     document.getElementById("submit-btn").disabled = true;
+    this.renderResult(result);
   }
   render() {
     this.rootEl.innerHTML = "";
