@@ -3,8 +3,8 @@ class StorageManager {
     this.key = key;
   }
   load() {
-      const storedData = localStorage.getItem(this.key);
-      return storedData ? JSON.parse(storedData) : null;
+    const storedData = localStorage.getItem(this.key);
+    return storedData ? JSON.parse(storedData) : null;
   }
   save(data) {
     localStorage.setItem(this.key, JSON.stringify(data));
@@ -79,6 +79,7 @@ class Quiz {
     this.rootEl = rootEl;
     this.attempt = new Attempt({ pass });
     this.restoreOrCreateAttempt();
+    this.render();
   }
 
   restoreOrCreateAttempt() {
@@ -111,6 +112,7 @@ class Quiz {
   resetAnswers() {
     this.attempt.reset();
     this.persist();
+    this.renderQuestionsOnly();
   }
 
   submit() {
@@ -121,5 +123,88 @@ class Quiz {
       .querySelectorAll('input[type="radio"]')
       .forEach((el) => (el.disabled = true));
     document.getElementById("submit-btn").disabled = true;
+  }
+  render() {
+    this.rootEl.innerHTML = "";
+
+    const questionCards = this.questions.map((q) => this.renderQuestionCard(q));
+    this.rootEl.append(...questionCards);
+
+    this.attachControls();
+
+    if (this.attempt.finished) {
+      const result = this.attempt.score(this.questions);
+      this.renderResult(result);
+      this.rootEl
+        .querySelectorAll('input[type="radio"]')
+        .forEach((el) => (el.disabled = true));
+      document.getElementById("submit-btn").disabled = true;
+    }
+  }
+
+  renderQuestionsOnly() {
+    this.rootEl.innerHTML = "";
+
+    const questionCards = this.questions.map((q) => this.renderQuestionCard(q));
+    this.rootEl.append(...questionCards);
+  }
+
+  renderQuestionCard(question) {
+    const card = document.createElement("article");
+    card.className = "card";
+    const title = document.createElement("h3");
+    title.textContent = `Q${question.id}. ${question.text}`;
+    card.appendChild(title);
+
+    const optionsContainer = document.createElement("div");
+    optionsContainer.className = "options";
+
+    question.options.forEach((opt, idx) => {
+      const optionId = `q${question.id}_opt${idx}`;
+      const optDiv = document.createElement("div");
+      optDiv.className = "option";
+
+      const radio = document.createElement("input");
+      radio.type = "radio";
+      radio.name = `q-${question.id}`;
+      radio.id = optionId;
+      radio.value = idx;
+      radio.checked = this.attempt.answers[question.id] === idx;
+      radio.addEventListener("change", () => this.setAnswer(question.id, idx));
+
+      const label = document.createElement("label");
+      label.setAttribute("for", optionId);
+      label.textContent = opt;
+
+      optDiv.appendChild(radio);
+      optDiv.appendChild(label);
+      optionsContainer.appendChild(optDiv);
+    });
+
+    card.appendChild(optionsContainer);
+    return card;
+  }
+
+  renderResult({ correct, total, ratio, passed }) {
+    const resultEl = document.getElementById("result");
+    resultEl.classList.remove("hidden", "pass", "fail");
+    resultEl.classList.add(passed ? "pass" : "fail");
+    const pct = Math.round(ratio * 100);
+    resultEl.innerHTML = `
+      <h3>Final Result</h3>
+      <p>Score: <strong>${correct}</strong> / <strong>${total}</strong> (${pct}%)</p>
+      <p>Status: <strong>${passed ? "PASS" : "FAIL"}</strong>
+      <br>
+       (To pass, you must score ≥ ${Math.round(this.attempt.pass * 100)}%)
+       </p>
+      <p>Refresh the page to start a fresh attempt.</p>
+    `;
+  }
+
+  attachControls() {
+    const resetBtn = document.getElementById("reset-btn");
+    const submitBtn = document.getElementById("submit-btn");
+    resetBtn.onclick = () => this.resetAnswers();
+    submitBtn.onclick = () => this.submit();
   }
 }
