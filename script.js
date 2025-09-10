@@ -3,14 +3,27 @@ class StorageManager {
     this.key = key;
   }
   load() {
-    const storedData = localStorage.getItem(this.key);
-    return storedData ? JSON.parse(storedData) : null;
+    try {
+      const storedData = localStorage.getItem(this.key);
+      return storedData ? JSON.parse(storedData) : null;
+    } catch (err) {
+      console.error("Error loading:", err);
+      return null;
+    }
   }
   save(data) {
-    localStorage.setItem(this.key, JSON.stringify(data));
+    try {
+      localStorage.setItem(this.key, JSON.stringify(data));
+    } catch (err) {
+      console.error("Error saving:", err);
+    }
   }
   clear() {
-    localStorage.removeItem(this.key);
+    try {
+      localStorage.removeItem(this.key);
+    } catch (err) {
+      console.error("Error clearing:", err);
+    }
   }
 }
 class Question {
@@ -26,6 +39,43 @@ class Question {
   isCorrect(answerIndex) {
     return Number(answerIndex) === this.correctIndex;
   }
+
+  render(attempt, setAnswer) {
+    const card = document.createElement("article");
+    card.className = "card";
+
+    const title = document.createElement("h3");
+    title.textContent = `Q${this.id}. ${this.text}`;
+    card.appendChild(title);
+
+    const optionsContainer = document.createElement("div");
+    optionsContainer.className = "options";
+
+    this.options.forEach((opt, idx) => {
+      const optionId = `q${this.id}_opt${idx}`;
+      const optDiv = document.createElement("div");
+      optDiv.className = "option";
+
+      const radio = document.createElement("input");
+      radio.type = "radio";
+      radio.name = `q-${this.id}`;
+      radio.id = optionId;
+      radio.value = idx;
+      radio.checked = attempt.answers[this.id] === idx;
+      radio.addEventListener("change", () => setAnswer(this.id, idx));
+
+      const label = document.createElement("label");
+      label.setAttribute("for", optionId);
+      label.textContent = opt;
+
+      optDiv.appendChild(radio);
+      optDiv.appendChild(label);
+      optionsContainer.appendChild(optDiv);
+    });
+
+    card.appendChild(optionsContainer);
+    return card;
+  }
 }
 
 class MultipleChoiceQuestion extends Question {
@@ -34,12 +84,9 @@ class MultipleChoiceQuestion extends Question {
   }
 }
 
-class TrueFalseQuestion {
+class TrueFalseQuestion extends Question {
   constructor({ id, text, correctIndex }) {
-    this.id = id;
-    this.text = text;
-    this.options = ["True", "False"];
-    this.correctIndex = correctIndex;
+    super({ id, text, options: ["True", "False"], correctIndex });
   }
   getType() {
     return "truefalse";
@@ -54,6 +101,13 @@ class Attempt {
     this.answers = {};
     this.finished = false;
     this.pass = pass;
+  }
+  restoreAttempt(saved) {
+    const attempt = new Attempt({ pass: saved.pass || 0.7 });
+    attempt.id = saved.id;
+    attempt.answers = saved.answers || {};
+    attempt.finished = saved.finished || false;
+    return attempt;
   }
   answer(questionId, optionIndex) {
     if (this.finished) return;
@@ -87,15 +141,19 @@ class Quiz {
   }
 
   restoreOrCreateAttempt() {
-    const saved = this.storage.load();
-    if (saved && saved.finished) {
-      this.storage.clear();
-      this.attempt = new Attempt({ pass: saved.pass || 0.7 });
-      this.persist();
-    } else if (saved) {
-      this.attempt = Object.assign(new Attempt(), saved);
-    } else {
-      this.persist();
+    try {
+      const saved = this.storage.load();
+      if (saved && saved.finished) {
+        this.storage.clear();
+        this.attempt = new Attempt({ pass: saved.pass || 0.7 });
+        this.persist();
+      } else if (saved) {
+        this.attempt = Attempt.restoreAttempt(saved);
+      } else {
+        this.persist();
+      }
+    } catch (err) {
+      console.error("Error restoring attempt:", err);
     }
   }
 
@@ -132,7 +190,9 @@ class Quiz {
   render() {
     this.rootEl.innerHTML = "";
 
-    const questionCards = this.questions.map((q) => this.renderQuestionCard(q));
+    const questionCards = this.questions.map((q) =>
+      q.render(this.attempt, (qid, idx) => this.setAnswer(qid, idx))
+    );
     this.rootEl.append(...questionCards);
 
     this.attachControls();
@@ -150,44 +210,10 @@ class Quiz {
   renderQuestionsOnly() {
     this.rootEl.innerHTML = "";
 
-    const questionCards = this.questions.map((q) => this.renderQuestionCard(q));
+    const questionCards = this.questions.map((q) =>
+      q.render(this.attempt, (qid, idx) => this.setAnswer(qid, idx))
+    );
     this.rootEl.append(...questionCards);
-  }
-
-  renderQuestionCard(question) {
-    const card = document.createElement("article");
-    card.className = "card";
-    const title = document.createElement("h3");
-    title.textContent = `Q${question.id}. ${question.text}`;
-    card.appendChild(title);
-
-    const optionsContainer = document.createElement("div");
-    optionsContainer.className = "options";
-
-    question.options.forEach((opt, idx) => {
-      const optionId = `q${question.id}_opt${idx}`;
-      const optDiv = document.createElement("div");
-      optDiv.className = "option";
-
-      const radio = document.createElement("input");
-      radio.type = "radio";
-      radio.name = `q-${question.id}`;
-      radio.id = optionId;
-      radio.value = idx;
-      radio.checked = this.attempt.answers[question.id] === idx;
-      radio.addEventListener("change", () => this.setAnswer(question.id, idx));
-
-      const label = document.createElement("label");
-      label.setAttribute("for", optionId);
-      label.textContent = opt;
-
-      optDiv.appendChild(radio);
-      optDiv.appendChild(label);
-      optionsContainer.appendChild(optDiv);
-    });
-
-    card.appendChild(optionsContainer);
-    return card;
   }
 
   renderResult({ correct, total, ratio, passed }) {
@@ -195,7 +221,10 @@ class Quiz {
     resultEl.classList.remove("hidden", "pass", "fail");
     resultEl.classList.add(passed ? "pass" : "fail");
     const pct = Math.round(ratio * 100);
-    resultEl.innerHTML = `
+    resultEl.innerHTML = this.resultMarkup(correct, total, pct, passed);
+  }
+  resultMarkup(correct, total, pct, passed) {
+    return `
       <h3>Final Result</h3>
       <p>Score: <strong>${correct}</strong> / <strong>${total}</strong> (${pct}%)</p>
       <p>Status: <strong>${passed ? "PASS" : "FAIL"}</strong>
@@ -205,7 +234,6 @@ class Quiz {
       <p>Refresh the page to start a fresh attempt.</p>
     `;
   }
-
   attachControls() {
     const resetBtn = document.getElementById("reset-btn");
     const submitBtn = document.getElementById("submit-btn");
